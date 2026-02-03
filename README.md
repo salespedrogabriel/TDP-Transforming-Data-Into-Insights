@@ -1,2 +1,5 @@
-# TDP
-Projects and notes carried out in for the TDP course in the Gen AI &amp; LLMs postgraduate program, 2026.1
+# [TDP] Transformando Dados em Percepções
+* **Course:** TDP
+* **Semester:** 2026.1
+* **Supervisor:** Anderson Nascimento
+
