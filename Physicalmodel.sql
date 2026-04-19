@@ -13,32 +13,32 @@
 -- Table: investidor (Investor)
 -- Stores all investors information (individuals and companies)
 CREATE TABLE investidor (
-    cpf_cnpj VARCHAR(14) PRIMARY KEY,          -- Brazilian tax ID (CPF=11, CNPJ=14)
-    nome_completo VARCHAR(100) NOT NULL,        -- Full name or company name
-    tipo_investidor VARCHAR(2) NOT NULL CHECK (tipo_investidor IN ('PF','PJ')), -- PF=Individual, PJ=Company
-    email VARCHAR(100) NOT NULL,                -- Contact email
-    telefone VARCHAR(20)                        -- Contact phone number
+    cpf_cnpj VARCHAR(14) PRIMARY KEY,          
+    nome_completo VARCHAR(100) NOT NULL,        
+    tipo_investidor VARCHAR(2) NOT NULL CHECK (tipo_investidor IN ('PF','PJ')), 
+    email VARCHAR(100) NOT NULL,                
+    telefone VARCHAR(20)                        
 );
 
 -- Table: acao (Stock)
 -- Stores stock information for listed companies
 CREATE TABLE acao (
-    ticker VARCHAR(10) PRIMARY KEY,             -- Stock ticker symbol (e.g., PETR4, VALE3)
-    nome_empresa VARCHAR(100) NOT NULL,         -- Company full name
-    setor VARCHAR(50) NOT NULL,                 -- Industry sector (e.g., Energy, Mining)
-    valor_mercado NUMERIC(15,2) NOT NULL CHECK (valor_mercado > 0) -- Market capitalization
+    ticker VARCHAR(10) PRIMARY KEY,             
+    nome_empresa VARCHAR(100) NOT NULL,         
+    setor VARCHAR(50) NOT NULL,                 
+    valor_mercado NUMERIC(15,2) NOT NULL CHECK (valor_mercado > 0) 
 );
 
 -- Table: negociacao (Trade/Transaction)
 -- Records all buy and sell operations
 CREATE TABLE negociacao (
-    id_negociacao SERIAL PRIMARY KEY,           -- Auto-incrementing transaction ID
-    data_hora TIMESTAMP NOT NULL,               -- Transaction date and time
-    tipo_operacao VARCHAR(10) NOT NULL CHECK (tipo_operacao IN ('COMPRA','VENDA')), -- BUY or SELL
-    quantidade INTEGER NOT NULL CHECK (quantidade > 0), -- Number of shares traded
-    valor_unitario NUMERIC(10,2) NOT NULL CHECK (valor_unitario > 0), -- Price per share at trade time
-    cpf_cnpj VARCHAR(14) NOT NULL,              -- Investor FK
-    ticker VARCHAR(10) NOT NULL,                -- Stock FK
+    id_negociacao SERIAL PRIMARY KEY,           
+    data_hora TIMESTAMP NOT NULL,               
+    tipo_operacao VARCHAR(10) NOT NULL CHECK (tipo_operacao IN ('COMPRA','VENDA')), 
+    quantidade INTEGER NOT NULL CHECK (quantidade > 0), 
+    valor_unitario NUMERIC(10,2) NOT NULL CHECK (valor_unitario > 0), 
+    cpf_cnpj VARCHAR(14) NOT NULL,              
+    ticker VARCHAR(10) NOT NULL,                
     FOREIGN KEY (cpf_cnpj) REFERENCES investidor(cpf_cnpj),
     FOREIGN KEY (ticker) REFERENCES acao(ticker)
 );
@@ -46,10 +46,10 @@ CREATE TABLE negociacao (
 -- Table: historico_cotacao (Price History)
 -- Stores historical stock prices for time series analysis
 CREATE TABLE historico_cotacao (
-    id_cotacao SERIAL PRIMARY KEY,               -- Auto-incrementing price record ID
-    data_hora TIMESTAMP NOT NULL,                -- Price timestamp
-    valor_cotacao NUMERIC(10,2) NOT NULL CHECK (valor_cotacao > 0), -- Stock price at that moment
-    ticker VARCHAR(10) NOT NULL,                 -- Stock FK
+    id_cotacao SERIAL PRIMARY KEY,               
+    data_hora TIMESTAMP NOT NULL,                
+    valor_cotacao NUMERIC(10,2) NOT NULL CHECK (valor_cotacao > 0), 
+    ticker VARCHAR(10) NOT NULL,                 
     FOREIGN KEY (ticker) REFERENCES acao(ticker)
 );
 
@@ -57,9 +57,9 @@ CREATE TABLE historico_cotacao (
 -- Associative entity tracking current holdings per investor per stock
 -- Composite primary key ensures one record per (investor, stock) pair
 CREATE TABLE saldo_carteira (
-    cpf_cnpj VARCHAR(14) NOT NULL,               -- Investor FK (part of composite PK)
-    ticker VARCHAR(10) NOT NULL,                 -- Stock FK (part of composite PK)
-    quantidade_acoes INTEGER NOT NULL CHECK (quantidade_acoes >= 0), -- Current shares held (never negative)
+    cpf_cnpj VARCHAR(14) NOT NULL,               
+    ticker VARCHAR(10) NOT NULL,                 
+    quantidade_acoes INTEGER NOT NULL CHECK (quantidade_acoes >= 0), 
     PRIMARY KEY (cpf_cnpj, ticker),
     FOREIGN KEY (cpf_cnpj) REFERENCES investidor(cpf_cnpj),
     FOREIGN KEY (ticker) REFERENCES acao(ticker)
@@ -94,12 +94,12 @@ BEGIN
     -- First, try to insert with positive quantity (always works)
     -- If record exists, update with proper sign (+ for BUY, - for SELL)
     INSERT INTO saldo_carteira (cpf_cnpj, ticker, quantidade_acoes)
-    VALUES (NEW.cpf_cnpj, NEW.ticker, NEW.quantidade)  -- Always positive on INSERT
+    VALUES (NEW.cpf_cnpj, NEW.ticker, NEW.quantidade)  
     ON CONFLICT (cpf_cnpj, ticker) 
     DO UPDATE SET quantidade_acoes = 
         saldo_carteira.quantidade_acoes + 
         (CASE WHEN NEW.tipo_operacao = 'COMPRA' THEN NEW.quantidade 
-              ELSE -NEW.quantidade END);  -- Sign applied only in UPDATE
+              ELSE -NEW.quantidade END);  
     
     RETURN NEW;
 END;
@@ -264,7 +264,3 @@ FROM investidor i
 LEFT JOIN saldo_carteira s ON i.cpf_cnpj = s.cpf_cnpj AND s.quantidade_acoes > 0
 GROUP BY i.nome_completo, i.cpf_cnpj
 ORDER BY distinct_stocks DESC;
-
--- ================================================
--- END OF SCRIPT
--- ================================================
